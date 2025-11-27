@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot UTESA</title>
+    <link rel="stylesheet" href="public/css/style.css" />
+    <style>
+      body {
+        background-image: url(./src/assets/img/slider-2.jpg);
+        background-size: cover;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #container {
+        background: linear-gradient(135deg, #00000099, #00962599);
+      }
+      .pulse-anim {
+        animation: bounce 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(-5%);
+          animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+        50% {
+          transform: none;
+          animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
+      }
+      #chat-box {
+        scrollbar-width: thin;
+        scrollbar-color: #93fdb3 transparent;
+      }
+      #chat-box::-webkit-scrollbar {
+        width: 6px;
+      }
+      #chat-box::-webkit-scrollbar-thumb {
+        background-color: #93fdb3;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body class="m-0 p-0 w-screen h-screen">
+    <section id="container" class="flex flex-col md:flex-row w-screen h-screen">
+      <div class="md:w-1/2 w-full relative flex justify-center items-center">
+        <div class="py-4 px-3 md:block gap-2 flex rounded-lg mx-4">
+          <img
+            src="src/assets/img/logo-bg.png"
+            alt="logo de la universidad"
+            class="pulse-anim w-20 h-20"
+          />
+          <span class="font-bold text-xl text-white text-shadow-xl"
+            >UNIVERSIDAD TECNOLÓGICA DE SANTIAGO - SEDE SANTIAGO</span
+          >
+        </div>
+      </div>
+      <div class="md:w-1/2 w-full flex justify-center items-center px-5">
+        <div
+          class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-4 flex flex-col h-[75vh] md:h-[90vh]"
+        >
+          <div class="text-center border-b pb-3 mb-3">
+            <h1 class="text-xl font-bold text-green-900">UTESA AI-Assist</h1>
+            <p class="text-sm text-gray-500">Asistente Virtual Universitario</p>
+          </div>
+
+          <div id="chat-box" class="flex-1 overflow-y-auto space-y-3 px-2">
+            <div class="text-center text-gray-400 text-sm">
+              Escribe tus dudas sobre ubicaciones, como funciona el sistema
+              Universitario.
+            </div>
+          </div>
+
+          <div class="flex items-center mt-3 border-t pt-3">
+            <input
+              id="user-input"
+              type="text"
+              placeholder="Escribe tu pregunta..."
+              class="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              onkeydown="if(event.key==='Enter') enviarMensaje()"
+            />
+            <button
+              onclick="enviarMensaje()"
+              class="ml-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition"
+            >
+              Enviar
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <script src="public/js/script.js"></script>
+  </body>
+</html>
