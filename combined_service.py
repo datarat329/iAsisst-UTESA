@@ -18,14 +18,14 @@ DB_CONFIG = {
     "database": "chatbot" 
 }
 
-# Variables globales inicializadas a None
+# Variables globales 
 preguntas_global = []
 respuestas_global = []
 vocabulario = []
 W1, b1, W2, b2 = None, None, None, None
 lr = 0.1
 
-# Desactivar advertencias de NumPy de MINGW-W64
+# Desactivar advertencias de NumPy (No quitar a favor)
 warnings.filterwarnings("ignore", message="Numpy built with MINGW-W64 on Windows 64 bits is experimental")
 warnings.filterwarnings("ignore", message="invalid value encountered in exp2")
 warnings.filterwarnings("ignore", message="invalid value encountered in log10")
@@ -35,17 +35,13 @@ warnings.filterwarnings("ignore", message="invalid value encountered in log10")
 # ====================================================
 
 def get_db_connection():
-    """Establece la conexión a la base de datos."""
     try:
-        # Intenta conectar
         return mysql.connector.connect(**DB_CONFIG)
     except mysql.connector.Error as err:
-        # Imprime el error para que Uvicorn lo muestre, PERO NO CRASHEA EL PROGRAMA
         print(f"ERROR DE CONEXIÓN A LA DB AL INICIO: {err}")
         return None
 
 def load_training_data_from_db():
-    """Carga los datos de la DB."""
     conexion = get_db_connection()
     if not conexion:
         return [], []
@@ -68,13 +64,11 @@ def load_training_data_from_db():
 
 
 # ====================================================
-# ? LÓGICA DE LA RED NEURONAL (AHORA ENCAPSULADA)
+# ? LÓGICA DE LA RED NEURONAL
 # ====================================================
 
 def vectorizar(frase):
-    """Convierte una frase en un vector binario basado en el vocabulario global."""
     if not vocabulario:
-         # Esto debería evitar un crash si el vocabulario está vacío
         return np.zeros(1) 
         
     vector = np.zeros(len(vocabulario))
@@ -89,10 +83,6 @@ def sigmoid(x): return 1 / (1 + np.exp(-x))
 def sigmoid_deriv(x): return x * (1 - x)
 
 def train_model():
-    """
-    Entrena la red neuronal. 
-    Se llama solo cuando el servidor está en funcionamiento o se fuerza.
-    """
     global W1, b1, W2, b2, vocabulario, preguntas_global, respuestas_global
     
     print(">>> Iniciando carga de datos...")
@@ -102,12 +92,12 @@ def train_model():
         print("ADVERTENCIA: Entrenamiento omitido. No hay datos en la DB.")
         return False
     
-    print(f"✅ Datos cargados. Preguntas: {len(preguntas_global)}")
+    print(f"Datos cargados. Preguntas: {len(preguntas_global)}")
 
     # Crear vocabulario
     todas = " ".join(preguntas_global).split()
     vocabulario = sorted(set(todas))
-    print(f"✅ Vocabulario creado con {len(vocabulario)} palabras.")
+    print(f"Vocabulario creado con {len(vocabulario)} palabras.")
     
     # Preparar datos
     X = np.array([vectorizar(p) for p in preguntas_global])
@@ -121,7 +111,7 @@ def train_model():
     b2 = np.zeros((1, len(respuestas_global)))
 
     # Bucle de entrenamiento
-    for epoch in range(10000): # Reducido temporalmente a 50k para la prueba
+    for epoch in range(10000): 
         z1 = np.dot(X, W1) + b1
         a1 = sigmoid(z1)
         z2 = np.dot(a1, W2) + b2
@@ -136,18 +126,15 @@ def train_model():
         W1 += np.dot(X.T, d1) * lr
         b1 += np.sum(d1, axis=0, keepdims=True) * lr
 
-    print("✅ Entrenamiento de la IA completado. Modelo activo.")
+    print(" Entrenamiento de la IA completado. Modelo activo.")
     return True
 
 def predict_ia(mensaje):
-    """Predice la respuesta de la IA para un mensaje dado."""
     if W1 is None or not respuestas_global:
-        # Devolver una respuesta de "no entrenado" si los pesos no están inicializados
         return {"probabilidad": 0, "respuesta_mas_probable": "Modelo de IA no inicializado. Usa /train para activarlo."}
 
     entrada = vectorizar(mensaje)
     entrada = entrada.reshape(1, -1) 
-    # ... (resto de la lógica de predicción)
     z1 = np.dot(entrada, W1) + b1
     a1 = sigmoid(z1)
     z2 = np.dot(a1, W2) + b2
@@ -162,16 +149,11 @@ def predict_ia(mensaje):
         "indice": int(indice_max)
     }
 
-# NO SE LLAMA A TRAIN_MODEL() AQUÍ. EL SERVIDOR DEBE ARRANCAR AHORA.
 # ====================================================
 # ? LÓGICA DE NEGOCIO MIGRADA DE PHP (index.php)
 # ====================================================
-# ====================================================
-# ? LÓGICA DE NEGOCIO MIGRADA DE PHP (Funciones Auxiliares)
-# ====================================================
 
 def normalizar(texto):
-    """Normaliza el texto (minúsculas, sin tildes ni puntuación)."""
     texto = texto.lower()
     mapping = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ñ': 'n'}
     for k, v in mapping.items():
@@ -180,7 +162,6 @@ def normalizar(texto):
     return texto.strip()
 
 def traducir_dias(texto):
-    """Traduce abreviaturas de días a nombres completos."""
     dias = {'MI': 'miércoles', 'LV': 'lunes y viernes', 'L': 'lunes', 'M': 'martes', 'MA': 'martes', 'J': 'jueves', 'V': 'viernes', 'S': 'sábado', 'D': 'domingo'}
     dias_ordenados = sorted(dias.items(), key=lambda item: len(item[0]), reverse=True)
     for ab, nom in dias_ordenados:
@@ -188,7 +169,6 @@ def traducir_dias(texto):
     return texto
 
 def sumar_45(hora_str):
-    """Suma 45 minutos a una hora dada (ej: '7:00' -> '7:45')."""
     try:
         dt = datetime.strptime(hora_str, '%H:%M')
         dt_fin = dt + timedelta(minutes=45)
@@ -202,7 +182,6 @@ def sumar_45(hora_str):
             return hora_str
 
 def describir_aula(codigoAula):
-    """Genera la descripción de la ubicación del aula."""
     codigo = codigoAula.upper().strip()
     match = re.match(r'^([A-E])(\d)(\d{2})$', codigo)
     if not match: return None
@@ -216,7 +195,6 @@ def describir_aula(codigoAula):
     return f"edificio {edificio}, {nivelTexto}, aula {numAula_str.zfill(2)} ({zona}){extra}"
 
 def procesar_aulas(aulasString, diasCount):
-    """Asegura que haya una lista de aulas para cada día de clase."""
     lista = [a.strip() for a in aulasString.upper().split() if a.strip()]
     resultado = []
     if not lista: return []
@@ -225,7 +203,6 @@ def procesar_aulas(aulasString, diasCount):
     return resultado
 
 def procesar_horario(horarioStr):
-    """Convierte la cadena de horario de la materia en una lista de descripciones de clase."""
     horarioStr = horarioStr.upper().strip()
     detalleHoras = []
     patron = re.compile(r'([A-Z]{1,2})(\d{1,2}:\d{2})(?:,(\d{1,2}:\d{2}))?(?:\s*[aA]\s*(\d{1,2}:\d{2}))?(?:\s*([ap]m))?', re.IGNORECASE)
@@ -248,7 +225,6 @@ def procesar_horario(horarioStr):
     return detalleHoras
 
 def parsear_materia(lineaMateria):
-    """Extrae los detalles de la materia de una línea de texto."""
     lineaMateria = re.sub(r'^horario\s+', '', lineaMateria, flags=re.IGNORECASE).strip()
     patron = re.compile(
         r'([A-Z]{3}-\d{3}-\d{3})\s+'        # 1. CODIGO
@@ -272,7 +248,6 @@ def parsear_materia(lineaMateria):
     return None
 
 def procesar_materia_completa(data):
-    """Procesa los datos parseados para generar descripciones completas."""
     if not data: return None
     detalleHoras = procesar_horario(data['horario'])
     listaAulas = procesar_aulas(data['aulas'], len(detalleHoras))
@@ -290,7 +265,6 @@ def procesar_materia_completa(data):
     }
 
 def generar_respuesta_horario(mensaje):
-    """Intenta procesar una o varias líneas de horario."""
     data = parsear_materia(mensaje)
     materias = []
     if data:
@@ -349,16 +323,16 @@ origins = [
     "http://localhost",
     "http://127.0.0.1",
     "http://127.0.0.1:8000",
-    "file://", # NECESARIO si ejecutas tu HTML localmente
-    "*" # Permite todos los orígenes (menos seguro, pero fácil para pruebas)
+    "file://", 
+    "*"
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Permitir todos los métodos (GET, POST, etc.)
-    allow_headers=["*"], # Permitir todos los headers
+    allow_methods=["*"], 
+    allow_headers=["*"], 
 )
 
 class ChatRequest(BaseModel):
@@ -383,12 +357,6 @@ def run_training():
 
 @app.post("/chat")
 def handle_chat(request: ChatRequest):
-    # ... (El cuerpo de esta función /chat sigue exactamente igual que antes)
-    # 1. Lógica Horario/Credito/Aula
-    # 2. Lógica IA (predict_ia)
-    # 3. Lógica Similitud DB
-    # 4. Fallback
-
     input_original = request.mensaje
     mensaje_normalizado = normalizar(input_original)
 
@@ -465,8 +433,7 @@ def handle_chat(request: ChatRequest):
         cursor.execute(sql)
         rows = cursor.fetchall()
         
-        from difflib import SequenceMatcher # Usando la librería SequenceMatcher de Python
-
+        from difflib import SequenceMatcher 
         for row in rows:
             preg_db = normalizar(row['pregunta'])
             similitud = SequenceMatcher(None, mensaje_normalizado, preg_db).ratio() * 100
@@ -484,7 +451,7 @@ def handle_chat(request: ChatRequest):
         return {"intencion": "similitud_db", "respuesta": respuesta_final, "confianza": mayor_similitud / 100.0}
     
     
-    # 4. Fallback final (Guardar para entrenamiento futuro)
+    # 4. Fallback final 
     conexion = get_db_connection()
     if conexion:
         cursor = conexion.cursor()
@@ -496,6 +463,3 @@ def handle_chat(request: ChatRequest):
         conexion.close()
         
     return {"intencion": "fallback", "respuesta": "No tengo información sobre eso aún, pero estoy aprendiendo. ¡Intenta reformular tu pregunta! (/≧▽≦)/", "confianza": 0.0}
-# ----------------------------------------------------
-# Asegúrate de que no haya código ejecutable aquí abajo
-# ----------------------------------------------------
